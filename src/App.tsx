@@ -38,8 +38,8 @@ function App() {
         <button onClick={incrementCount}>+</button>
       </div>
       <div>
-        <ConversationForm />
         <Paragraphs />
+        <ConversationForm />
       </div>
     </div>
   );

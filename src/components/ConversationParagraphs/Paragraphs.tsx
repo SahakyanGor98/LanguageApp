@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { createUseStyles } from "react-jss";
 import { nanoid } from "nanoid";
+import { useDropzone } from "react-dropzone";
 
 const useStyles = createUseStyles({
   container: {
@@ -47,19 +48,30 @@ const useStyles = createUseStyles({
     cursor: "pointer",
     fontSize: "1.2rem",
   },
+  audioOrDrop: {
+    width: "400px",
+  },
+  dropzone: {
+    border: "2px dashed #007bff",
+    padding: 5,
+    borderRadius: 5,
+    textAlign: "center",
+    cursor: "pointer",
+  },
 });
 
 const SPEAKER_1 = "speaker-1";
 const SPEAKER_2 = "speaker-2";
 const INITIAL_INPUTS = [
-  { id: nanoid(), text: "", role: SPEAKER_1 },
-  { id: nanoid(), text: "", role: SPEAKER_2 },
+  { id: nanoid(), text: "", role: SPEAKER_1, audioUrl: "" },
+  { id: nanoid(), text: "", role: SPEAKER_2, audioUrl: "" },
 ];
 
 type TInputItem = {
   id: string;
   text: string;
   role: string;
+  audioUrl: string;
 };
 
 const TextInputsComponent: React.FC = () => {
@@ -112,7 +124,10 @@ const TextInputsComponent: React.FC = () => {
   const addNewParagraph = () => {
     const newRole = inputs.length % 2 === 0 ? SPEAKER_1 : SPEAKER_2;
     const newId = nanoid();
-    setInputs([...inputs, { id: newId, text: "", role: newRole }]);
+    setInputs([
+      ...inputs,
+      { id: newId, text: "", role: newRole, audioUrl: "" },
+    ]);
     setActiveId(newId);
   };
 
@@ -121,7 +136,30 @@ const TextInputsComponent: React.FC = () => {
     setInputs(newInputs);
   };
 
+  const handleAudioUpload = (file: File, id: string) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const audioUrl = event.target?.result as string;
+      setInputs(
+        inputs.map((input) =>
+          input.id === id ? { ...input, audioUrl } : input
+        )
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onDrop = (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (file) {
+      handleAudioUpload(file, activeId || "");
+    }
+  };
+  const { getRootProps, getInputProps } = useDropzone({ onDrop });
+
   useEffect(() => {
+    console.log("Yohooo");
+    
     if (activeId !== null && containerRef.current) {
       const inputElement = containerRef.current.querySelector(
         `input[data-id="${activeId}"]`
@@ -140,7 +178,7 @@ const TextInputsComponent: React.FC = () => {
 
   return (
     <div className={classes.container} ref={containerRef}>
-      {inputs.map(({ id, text, role }) => (
+      {inputs.map(({ id, text, role, audioUrl }) => (
         <div key={id} className={classes.inputRow}>
           <label className={classes.label}>{`Speaker ${role.charAt(
             role.length - 1
@@ -161,6 +199,19 @@ const TextInputsComponent: React.FC = () => {
           >
             &#x2715;
           </button>
+          <div className={classes.audioOrDrop}>
+            {!audioUrl ? (
+              <div {...getRootProps()} className={classes.dropzone} onDragEnter={() => setActiveId(id)}>
+                <input {...getInputProps()} />
+                <p>Drag 'n' drop an audio file here, or click to select one</p>
+              </div>
+            ) : (
+              <audio controls>
+                <source src={audioUrl} type="audio/mpeg" />
+                Your browser does not support the audio element.
+              </audio>
+            )}
+          </div>
         </div>
       ))}
       <div className={classes.inputRow}>
